@@ -18,3 +18,22 @@ def initialize_llm():
     
     return llm
 
+@st.cache_resource
+def initialize_vectorstore():
+    """Initializes the Vectorstore"""
+    embeddings = OllamaEmbeddings(model=EMBED_MODEL)
+
+    vectorstore = Chroma(
+        persist_directory = str(DB_PATH),
+        embedding_finction = embeddings,
+        collection_name = "documents"
+    )
+
+    return vectorstore
+
+llm = initialize_llm()
+vectorstore = initialize_vectorstore()
+
+def index_folder():
+    """Index the files for the student handbook"""
+    pdf_files = list(WATCH_PATH.glob("*.pdf"))

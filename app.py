@@ -1,7 +1,9 @@
 from langchain_ollama import OllamaEmbeddings, ChatOllama
 from langchain_chroma import Chroma
+from langchain_community.document_loaders import PyPDFLoader
 from pathlib import Path
 import streamlit as st
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 # --- CONFIG ---
 WATCH_PATH = Path("./knowledge_base")
@@ -36,4 +38,33 @@ vectorstore = initialize_vectorstore()
 
 def index_folder():
     """Index the files for the student handbook"""
-    pdf_files = list(WATCH_PATH.glob("*.pdf"))
+    files = list(WATCH_PATH.glob("*.pdf"))
+
+    if not files:
+        return "No Files in ./knowledge_base folder"
+    
+    total_chunks = 0
+
+    for file in files:
+        try:
+            if file.suffix.lower() == '.pdf':
+                loader = PyPDFLoader(str(file))
+
+            docs = loader.load()
+            if not docs: 
+                continue
+        
+            splitter = RecursiveCharacterTextSplitter(
+                chunk_size=800,
+                chunk_overlap = 100
+            )
+
+            chunks = splitter.split_documents(docs)
+
+            vectorstore.add_documents(chunks)
+            total_chunks += len(chunks)
+
+        except Exception as e:
+            return f"Error Processing {file.name}: {str(e)}"
+    
+    return f"Index {len(files)} files -> {total_chunks} chunks"

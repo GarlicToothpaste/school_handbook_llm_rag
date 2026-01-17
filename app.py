@@ -68,3 +68,24 @@ def index_folder():
             return f"Error Processing {file.name}: {str(e)}"
     
     return f"Index {len(files)} files -> {total_chunks} chunks"
+
+def query_rag(question : str):
+    """Retrieves from the DB to generate answers"""
+
+    docs = vectorstore.similarity_search(question, k=5)
+
+    if not docs:
+        return "No documents found for your question"
+    
+    context = "\n\n---\n\n".join([d.page_content for d in docs])
+
+    prompt_template = f"""
+    You are an agent that summarizes data that answers a question given a context.
+
+    Given this context: {context}
+
+    Make a summary that answers this question: {question}
+    """
+
+    response = llm.invoke(prompt_template)
+    return response.content.strip()
